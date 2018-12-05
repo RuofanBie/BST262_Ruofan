@@ -1,0 +1,25 @@
+Package: BayesMendel
+Version: 2.1-4
+Date: 2017/07/28
+Title: Determining Carrier Probabilities for Cancer Susceptibility
+        Genes
+Description: BayesMendel calculates the probability of carrying mutations of the cancer susceptibility genes (BRCA1 and BRCA2 for breast/ovarian cancer, MLH1/MSH2/MSH6 for colon/rectum/endometrium cancer, hypothetical PANC gene for pancreas cancer, and P16 for melanoma).  The calculation is based on an individual's family history of the cancer(s) in first- and second-degree relatives and, if available, on the results of genetic testing for the genes. Version as of 2.0-81 run peeling through c-code by calling peelingRC.
+Author: Giovanni Parmigiani <gp@jimmy.harvard.edu>, Sining Chen, Wenyi Wang, Hormuzd Katki and Amanda Blackford. Adapted from C code written by Omar Aguilar and Giovanni Parmigiani, with contributions by Sining Chen, Daniel F. Gudbjartsson, Kathy Zhou, Edwin S. Iversen, Jr 
+License: GPL (>= 3) | file LICENSE
+Maintainer: Amanda Blackford <ablackf1@jhmi.edu>
+Depends: kinship2, graphics
+Collate: BayesMendel.R calLKLFS.R calRiskNoDeathLFS.R
+        CensorAtIntervention.R CheckFamStructure.R CombineDataLFS.R
+        cum2dens.R cum2haz.R dens2hazcs.R lkNoneAffectLFS.R
+        FamilyHistoryContributions.R ImputeAge.R lfsparams.R LFSpro.R
+        LyteSimple.R MakeRelationship.R MMRparams.R MMRpro.R
+        MakePenetPostIntervention.R PostIntervention.R ReadCaGeneFam.R
+        TestContributions.R brcaparams.R brcapro.R calc.future.risk.R
+        findids.R melapro.R melaparams.R pancparams.R pancpro.R premm.R
+        peelingRC.R plotBayesMendel.R
+URL: https://bcb.dfci.harvard.edu/bayesmendel/index.php
+LazyData: true
+NeedsCompilation: yes
+Packaged: 2018-03-20 21:14:16 UTC; Theo
+Built: R 3.1.2; i386-w64-mingw32; 2018-03-28 00:06:34 UTC; windows
+Archs: i386, x64

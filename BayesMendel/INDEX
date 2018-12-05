@@ -1,0 +1,118 @@
+BRCAbaseline.race.2008
+                        Baseline (Non-carrier) Penetrance of BRCAPRO by
+                        race/ethnicity
+BRCApenet.AJ.2001.2008
+                        Previous Penetrance of BRCAPRO for Ashkenazi
+                        Jewish
+BRCApenet.AJ.2004.2008
+                        Previous Penetrance of BRCAPRO for Ashkenazi
+                        Jewish
+BRCApenet.Italian.2008
+                        Current Default Penetrance of BRCAPRO for
+                        Italian Population
+BRCApenet.metaDSL.2008
+                        Current Default Penetrance of BRCAPRO
+BRCApenet.nonAJ.2001.2008
+                        Previous Penetrance of BRCAPRO for Populations
+                        Other Than the Ashkenazi Jewish
+BRCApenet.nonAJ.2004.2008
+                        Previous penetrance of BRCAPRO for populations
+                        other than the Ashkenazi Jewish (AJ)
+BayesMendel-class       Class BayesMendel
+BrOvJointDsn.2014       Joint distribution of probabilities of breast
+                        and ovarian cancer, by age, for BRCAPRO
+CBRCApenet.2012         Penetrance for contralateral (second) breast
+                        cancer for BRCAPRO
+CensorAtIntervention    Censor post-intervention outcomes to
+                        intervention age
+CheckFamStructure       Check validity of family input for
+                        susceptibility prediction
+CombineDataLFS          Combine the family information data and cancer
+                        information data
+CrcEcJointDsn.2015      Joint distribution of probabilities of
+                        colorectal and endometrial cancer, by age, for
+                        MMRpro
+FamilyHistoryContributions
+                        Compute Likelihood Contributions for both pre-
+                        and post- intervention
+ImputeAge               Replaces unknown ages (= 1) with estimates
+                        using 1) BRCAPRO Lyte+ for unaffected family
+                        members, and 2) Multiple imputation for
+                        affected family members
+LFSpenet.2010           Penetrance for TP53 mutation
+LFSpro                  Estimating TP53 mutation probability for
+                        families with Li-Fraumeni Syndrome
+LFSpro.cancer.type      Predefined cancer types and the corresponding
+                        number in LFSpro
+LFSproBM-package        TP53 mutation carrier estimation
+LyteSimple              Imputes unaffected relatives using the
+                        LyteSimple model
+MMR.fam                 An example family history for colorectal and
+                        endometrial cancer families
+MMRparams               Set the parameters in MMRpro
+MMRpenet.2008           Current Default Penetrance for MMRpro
+MMRpro                  Carrier Probabilities for Mismatch Repair Genes
+                        MLH1, MSH2, and MSH6 for Individuals at Risk
+                        for the Lynch Syndrome
+MakePenetPostIntervention
+                        Make post-intervention penetrances, given
+                        pre-intervention penetrances and hazard ratios
+MakeRelationship        Generate relationship information between each
+                        individual in the family and the counselee
+PostIntervention        Truncate pre-intervention outcomes, keep only
+                        post-intervention outcomes for oophorectomy
+ReadCaGeneFam           Read and Convert CaGene family input files
+TestContributions       Compute the contributions from genetic testing
+                        for susceptibility genes and/or markers
+brca.fam                An example family history for breast and
+                        ovarian cancer families
+brcaparams              Set the parameters in brcapro
+brcapro                 Carrier Probabilities for Breast Cancer
+                        Susceptibility Genes BRCA1 and BRCA2
+calLKLFS                Calculate the likelihood Pr(D|G) for
+                        Li-Fraumeni syndrome.
+calRiskNoDeathLFS       Calculate future risk.
+calc.future.risk        Calculate future risk
+cancer.info.LFS         Cancer information data
+cancer.type.all.LFS     Predefined cancer types in LFSpro.
+compriskSurv            Age-specific probabilities of not developing
+                        non-breast/ovary cancer
+cum2dens                Convert cumulative distribution functions to
+                        probability density functions
+cum2haz                 Convert cumulative distribution functions to
+                        hazard functions
+death.othercauses       Hazards of death of causes excluding cancers of
+                        interest
+dens2hazcs              Converts cause-specific probability density
+                        functions to cause-specific hazard functions
+fam.cancer.data.LFS     Combined data with pedigree and cancer
+                        information
+findids                 Supplemental function to used to check
+                        structure of pedigrees and to calculate carrier
+                        probabilities.
+invasive.cut.LFS        Cutoff for malignant cancer
+lfs.cut                 Cutoff for Li-Fraumeni Syndrome spectrum cancer
+lfsparams               Set the parameters in LFSpro
+lkNoneAffectLFS         Likelihood for non-affected individuals
+mela.fam                An example family history for melanoma families
+melaparams              Set the parameters in melapro
+melapenet.GEM.2009      Alternate Penetrance of MelaPRO
+melapenet.HBI.2009      Current Default Penetrance of MelaPRO
+melapenet.LBI.2009      Alternate Penetrance of MelaPRO
+melapro                 Carrier Probabilities for melanoma-associated
+                        gene P16
+panc.fam                An example family history for pancreatic cancer
+                        families
+pancparams              Set the parameters in pancpro
+pancpenet.2008          Current Default Penetrance for PancPRO
+pancpro                 Carrier Probabilities for Major Susceptibility
+                        Gene (hypothetical PANC) for Individuals at
+                        Risk for the Pancreatic Cancer
+pedigree.LFS            Pedigree information data
+peelingRC               Peeling Algorithm of Likelihood Calculation for
+                        an Arbitrary Family Pedigree without Loop
+plot.BayesMendel        Plots pedigree structure and probability
+                        estimates from brcapro or MMRpro for objects of
+                        class 'BayesMendel'
+premm                   PREMM1,2,6 Model: Prediction Model for MLH1,
+                        MSH2, and MSH6 Gene Mutations

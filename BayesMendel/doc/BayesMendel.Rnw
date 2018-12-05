@@ -1,0 +1,602 @@
+% \VignetteIndexEntry{BayesMendel Vignette}
+% \VignetteKeywords{brcapro, MMRpro, pancpro}
+% \VignettePackage{BayesMendel}
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{Sweave}
+
+\parskip=.3cm
+\textwidth=6.2in
+\textheight=8.5in
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\R}{\textsf{R}}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
+\newcommand{\Robject}[1]{\texttt{#1}}
+
+\title{BayesMendel v2.1-4: An R package for cancer risk prediction} 
+\author{Amanda Blackford}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+\section{Introduction}
+
+The BayesMendel working group is dedicated to the development of methodologies, models, and open source
+software for predicting who may carry a cancer susceptibility gene. We use statistical ideas that go back 
+to Bayes and genetic models that go back to Mendel.  
+
+\noindent This vignette will show the user how to use BRCAPRO, MMRpro, PancPRO and MelaPRO to: 
+
+\begin{itemize}
+\item Calculate probabilities of being a germline mutation carrier.
+\item Calculate future risk of cancer.
+\item Incorporate supplementary information (marker testing results, germline testing results, tumor information) into the models.
+\end{itemize}
+
+<<options,echo=FALSE>>=
+options(width=65)
+@
+
+\section{Using the models}
+
+\subsection{BRCAPRO}
+
+\subsubsection{Family History}
+
+Before running your pedigree through \Rfunction{brcapro}, be sure it is structured as a numeric data frame with history of 
+breast and ovarian cancers: n rows (where n is the number of family members, including the counselee) 
+and 13 columns with column names:\\
+
+{\small
+ \begin{tabular}{ll}
+    \textbf{Column Name} & \textbf{Content} \\
+   ID & Member identifier \\
+   Gender & Gender (0=female, 1=male) \\
+   FatherID & Father's identifier number \\
+   MotherID & Mother's identifier number \\
+   AffectedBreast & Breast cancer status (0=no cancer,\cr
+   & 1=breast cancer,one breast involved; 2=bilateral breast cancer, NA=unknown status) \\
+   AffectedOvary & Ovarian cancer status (0=no cancer, 1=ovarian cancer, NA=unknown status) \\
+   AgeBreast & Age of onset of breast cancer if a breast cancer case. \\
+   & Current age or age of death if not a breast cancer case.  \\
+   & NA if there is no age information. \\
+   AgeOvary & Age of onset of ovarian cancer if an ovarian cancer
+   case.  \\
+   & Current age or age of death if not an ovarian cancer case. \\
+   & NA if there is no age information. \\
+   AgeBreastContralateral & Age at onset of breast cancer, second breast.  \\
+   & Only for members with breast cancer status=2.  
+   For the rest enter a 0. \\
+   Twins &Identifies siblings who are identical twins. \\
+   & Each twin pair is identified by a unique number.  For the rest enter a 0.  \\
+   ethnic & Identifies the ethnicity of each family member. \\
+   & Enter ``nonAJ'', ``AJ'', ``Italian'', ``Other'' or NA (as
+   recognized by is.na() function).\\
+   Death & Vital Status (0=Alive, 1=Dead) \\
+   AgeDeath & Family member's age at death or current age if alive. \\
+
+\end{tabular}}
+
+
+ \noindent If at least one family member is "AJ" the default
+ is to use the prevalence associated with the "AJ" for family members with
+ unknown ethnicity. Otherwise, the prevelance associated with "nonAJ" is used
+ for family members with unknown ethnicity.
+
+\noindent To begin using any BayesMendel models, load the package library:
+
+<<package>>=
+library(BayesMendel)
+@
+
+The parameters used by the model, including penetrance, allele frequency, and sensitivity/specificity of testing, are set using
+the function \Rfunction{brcaparams}.  Any changes to the parameters can be made by calling this function.
+
+<<package>>=
+
+# Change future risk to be calculated in intervals of 2 y instead of the default of 5 y.
+# Leave all other parameters as set.
+myparams <- brcaparams(age.by=2)
+
+# Run BRCAPRO with family history information for example family
+out = brcapro(family=brca.fam)
+slotNames(out)
+out@probs
+out@family
+
+@
+\subsection{Age Imputation}
+
+By default, \Rfunction{brcapro} imputes the ages of family members with unknown current or affected ages, denoted either by the user with NA (new as of v2.1) or value 1 (used in previous versions).  Family members who are unaffected at an unknown age have their ages imputed using the approach taken in Lyte+ (see 
+Biswas, S. Atienza, P., Chipman, J., Hughes, K., Gutierrez Barrera, A.M., Amos, C.I., Arun, B., Parmigiani, G. (2013) ``Simplifying Clinical Use of the Genetic Risk Prediction Model BRCAPRO", Breast Cancer Research and Treatment, 139: 571-579.).
+Family members who are affected at an unknown age have their ages imputed using a multiple imputation approach that uses SEER incidence rates of breast and ovarian cancer to sample affection ages.
+The imputation can be turned off by using the option \Rfunction{imputeAges}=F in the \Rfunction{brcapro} function.  Note that the imputation of relatives must also be turned off by using option \Rfunction{imputeRelatives}=F in \Rfunction{brcapro}, because by default ages are imputed for relatives who are imputed.  These options apply to models \Rfunction{MMRpro}, \Rfunction{pancpro}, and \Rfunction{melapro}.
+
+<<package>>=
+# Turn off age imputation
+out <- brcapro(family=brca.fam, imputeAges=FALSE, imputeRelatives=FALSE)
+
+# Calculate risks with imputed ages
+out = brcapro(family=brca.fam, imputeAges=TRUE, imputeRelatives=TRUE)
+# When age imputation is done, the original
+#family (with NA inputs re-coded to
+#unaffected, age = 1) is returned by brcapro
+out@family
+
+# Can also impute ages, but not relatives.
+out = brcapro(family=brca.fam, imputeAges=TRUE, imputeRelatives=FALSE)
+
+@
+
+
+\subsubsection{Changing the penetrance or prevalence}
+
+Generally, the user can specify the prevalence of \emph{BRCA1} and
+\emph{BRCA2} directly in the pedigree through the ``ethnic'' column.
+
+The user can input their own values for prevalence by specifying
+ethnic = ``Other'' and inputting the values using the
+\Rfunction{brcaparams} function.
+
+
+The user can also specify the penetrance estimates to be used by
+\Rfunction{brcapro}.  The default is the BRCApenet.metaDSL.2008
+object.  To use the penetrance
+estimates for the Italian population:
+<<package>>=
+myparams <- brcaparams(penetrance = BRCApenet.Italian.2008)
+out <- brcapro(family=brca.fam, params=myparams)
+@ 
+
+
+\subsubsection{Specifying race/ethnicity of the family}
+
+A set of race/ethnicity-specific baseline (non-carrier) penetrance
+values were recently added to \Rfunction{brcapro}.  The current
+default assumes that the race/ethnicity of the input family is
+unknown, but the user can specify one of five different inputs: Asian,
+Black, Hispanic, NativeAmerican and White.   Race/ethnicity categories and estimates were derived using the DevCan 
+(http://srab.cancer.gov/devcan/) software provided by the National
+Cancer Institute (NCI).  To specify a particular race, use the
+``race'' input option in \Rfunction{brcapro}.
+
+<<package>>=
+out <- brcapro(family=brca.fam, race="Hispanic")
+@ 
+
+\subsubsection{Germline Testing Results}
+
+If the results for \emph{BRCA1} and \emph{BRCA2} germline testings are available, the user can input the 
+results in data frame \Robject{germline.testing} (0=no test, 1=positive test, 2=negative test) with column names 
+``BRCA1", ``BRCA2" and ``Test Order''.
+
+<<package>>=
+# Add the testing results for BRCA1 and BRCA2
+BRCA1 <- BRCA2 <- TestOrder <- rep(0,nrow(brca.fam))
+germline.testing <- data.frame(BRCA1,BRCA2,TestOrder)
+germline.testing[2,] <- c(2,0,1)
+out <- brcapro(family=brca.fam, germline.testing=germline.testing)
+@
+
+
+\subsubsection{Marker Testing Results}
+
+ If the results for \emph{BRCA1} prognostic markers are available, 
+the user can input the
+results in data frame \Robject{marker.testing} 
+with column names shown below. Note that even if not all the biomarker results listed
+ below are available, all 4 columns must contain non-missing values, which should be set to zero
+for biomarkers that were not tested. \\ \\
+
+{\small
+ \begin{tabular}{ll}
+    \textbf{Column Name} & \textbf{Content}  \\
+  ER & ER testing result. (0=no test, 1=positive test,
+  2=negative test) \\
+  CK14 & CK14 testing result. (0=no test, 1=positive test,
+  2=negative test) \\
+  CK5.6 & CK5/6 testing result. (0=no test, 1=positive test,
+  2=negative test) \\
+  PR & PR testing result. (0=no test, 1=positive test,
+  2=negative test) \\
+  HER2 & HER2 testing result. (0=no test, 1=positive test,
+  2=negative test) \\
+\end{tabular}
+}
+
+\noindent When the testing result for ER is negative, and the results for
+CK14 and CK5/6 are both also available, these 3 markers are 
+treated as a group, and the calculations of carrier probabilities will incorporate
+the joint conditional probabilities of them given genetic status. If the result for
+either CK14 or CK5/6 is not available, the calculations of carrier probabilities
+will involve either the marginal conditional probability of ER given
+genetic status, or if HER2 testing is available, the joint conditional
+probability of ER and HER2 given genetic status. 
+Note that when ER is positive, the testing results for CK14 or CK5/6
+are not considered. For any family member, if the testing
+result for ER is available, the testing result for PR will be ignored
+even if it is also available. That is, PR will not be included in
+carrier prediction when ER is available.  PR will only be used when
+either PR only or PR and HER2 testing are available.
+
+<<package>>=
+# Add the testing results for breast cancer markers
+marker.testing <- data.frame(matrix(rep(0,nrow(brca.fam)*5),ncol=5))
+colnames(marker.testing) <- c("ER","CK14","CK5.6","PR","HER2")
+brca.fam[1,"AffectedBreast"] <- 1 
+marker.testing[1,"ER"] <- 2 
+out <- brcapro(family=brca.fam, germline.testing=germline.testing, marker.testing=marker.testing)
+@
+
+\subsubsection{Oophorectomy}
+
+If women in the pedigree have had an oophorectomy, this information can be included in the calculation by creating 
+a data frame \Robject{oophorectomy}.
+Set up a data frame with two columns, one indicating if oophorectomy was done and the other with the age
+at oophorectomy.  If no oophorectomy was done, an individual's current age should be used.
+
+ \begin{tabular}{ll}
+  \textbf{Column Name} & \textbf{Content}  \\
+  Oophorectomy & Oophorectomy yes/no. (0=no oophorectomy, 1=oophorectomy) \\
+  AgeOophorectomy & Age at Oophorectomy.  \\
+\end{tabular}
+
+<<package>>=
+# Add the information for oophorectomy
+Oophorectomy <- c(1,rep(0,(nrow(brca.fam)-1)))
+AgeOophorectomy <- c(30,rep(1,(nrow(brca.fam)-1)))
+oophorectomy <- data.frame(Oophorectomy,AgeOophorectomy)
+out <- brcapro(family=brca.fam, germline.testing=germline.testing, marker.testing=marker.testing, oophorectomy=oophorectomy)
+@ 
+
+\subsubsection{Mastectomy}
+
+If women in the pedigree have had a bilateral mastectomy, this information can be included in the calculation by creating 
+a data frame \Robject{mastectomy}.
+Set up a data frame with two columns, one indicating if mastectomy was done and the other with the age
+at mastectomy.  If no mastectomy was done, an individual's current age
+should be used.  Only bilateral mastectomy should be included, and not
+mastectomy performed on only one breast.
+
+ \begin{tabular}{ll}
+  \textbf{Column Name} & \textbf{Content}  \\
+  Mastectomy & Mastectomy yes/no. (0=no mastectomy, 1=mastectomy) \\
+  AgeMastectomy & Age at Mastectomy.  \\
+\end{tabular}
+
+<<package>>=
+# Add the information for mastectomy
+Mastectomy <- c(1,rep(0,(nrow(brca.fam)-1)))
+AgeMastectomy <- c(57,rep(1,(nrow(brca.fam)-1)))
+mastectomy <- data.frame(Mastectomy,AgeMastectomy)
+out <- brcapro(family=brca.fam, mastectomy=mastectomy)
+@ 
+
+
+\subsection{MMRpro}
+
+\subsubsection{Family History}
+
+Before running your pedigree through \Rfunction{MMRpro}, be sure it is structured as a numeric data frame with history of colon 
+and endometrial cancers: n rows (where n is the number of family members, including the counselee) and 8 
+columns with required column names described below.
+
+\noindent The family history includes the information on the counselee and his/her relatives. For each member, we need information on
+whether he or she has been diagnosed with colorectal cancer and either the age at diagnosis or, if cancer free, the current age 
+or the age at death.  We do the same for endometrial cancer, if the member is female.
+
+  \noindent The family cancer history must be entered in data frame form, with one row
+  for each family member and columns containing the following information: \\
+
+{\small
+ \begin{tabular}{ll}
+   \textbf{Column} & \textbf{Content}  \\
+   ID & Member identifier \\
+   Gender & Gender (0=female, 1=male) \\
+   FatherID & Father's identifier number \\
+   MotherID & Mother's identifier number \\
+   AffectedColon & Colorectal cancer status  \\
+	& (0=no cancer,1=colon/rectum cancer,NA=no information) \\
+   AffectedEndometrium & Endometrial cancer status \\
+&  (0=no cancer, 1=ovarian cancer, NA=no information) \\
+   AgeColon & Age of onset of colorectal cancer if a colorectal cancer
+   case. \\
+   & Current age or age of death if not a colorectal cancer case.  \\
+   & NA if there is no age information. \\
+   AgeEndometrium & Age of onset of endometrial cancer if an endometrial cancer case. \\
+   & Current age or age of death if not an endometrial cancer case. \\
+   & NA if there is no age information. \\
+   Twins &Identifies siblings who are identical twins. \\
+   & Each twin pair is identified by a unique number.  For the rest enter a 0.  \\
+\end{tabular}
+}
+
+\noindent If it is known that a family member is affected, but age of diagnosis is
+ unknown, either enter an estimate or evaluate the program at different
+ plausible ages. 
+ 
+\noindent The parameters used by the model, including penetrance, allele frequency, and sensitivity/specificity of testing, are set using 
+the function \Rfunction{MMRparams}.  Any changes to the parameters can be made by calling this function.  
+
+<<package>>=
+
+# Change future risk to be calculated up to age 95 instead of the default 85.
+# Leave all other parameters as set.
+myparams <- MMRparams(age.to=95)
+
+# Run MMRpro with family history information for example family
+out = MMRpro(family=MMR.fam, params=myparams)
+
+@
+
+\subsubsection{Germline Testing}
+
+Information about germline testing results is included in the \Robject{germline.testing} object.  If the results 
+of germline testing are available, the user can input them into a data frame with n rows and 4 columns with
+    column names ``MLH1", ``MSH2", ``MSH6", and Test Order which
+    stores the mutation testing results for \emph{MLH1}, \emph{MSH2}, and \emph{MSH6} (0=no test, 1=positive test,
+      2=negative test) and order in which family members were tested.  If the testing order is unknown, we suggest evaluating the model multiple times, allowing each tested family member to be indicated as the first person tested.
+
+<<package>>=
+
+## The counselee's father tested negative for MLH1 and MSH2.
+## No testing for MSH6 was done.
+MLH1 <- MSH2 <- MSH6 <- TestOrder <- rep(0, nrow(MMR.fam))
+germline.testing = data.frame(MLH1, MSH2, MSH6, TestOrder)
+germline.testing[3,] <- c(2,2,0,1)  
+
+out <- MMRpro(family=MMR.fam, germline.testing = germline.testing)
+
+@
+
+  
+\subsubsection{Marker Testing}
+
+Information about the colorectal tumor is included in the \Robject{marker.testing} object.  This object is a data frame with n rows
+and 2 columns with information about MSI testing and location of the colorectal tumor.  For more information on determining 
+MSI, please refer to Boland (1998).  If immunohistochemistry (IHC) was performed, enter 1 if any protein expression was shown 
+to be abnormal or 2 if all were normal. \\ \\
+
+{\small
+ \begin{tabular}{ll}
+  \textbf{Column Name} & \textbf{Content}  \\
+ MSI & Microsatellite instability result\\
+& enter 1 if high instability is present \\
+&  2 if low instability or stability is present, or \\ 
+& 0 if no MSI test has been performed. \\
+  location & Location of the colorectal tumor: \\
+&  enter 1 if found in the proximal colon \\
+&  2 if found in the distal colon, or \\
+&  0 if the location of the tumor is unknown.  \\
+\end{tabular}
+}
+
+<<package>>=
+
+## Now let's say the counselee's sister has a colorectal tumor
+
+MMR.fam[7, "AffectedColon"] <- 1
+
+## The counselee's sister's tumor was found to be MSI high.
+## Add in this MSI result.
+
+MSI <- location <- rep(0, nrow(MMR.fam))
+marker.testing <- data.frame(MSI, location)
+marker.testing[7, "MSI"] <- 1
+
+out <- MMRpro(family = MMR.fam, marker.testing = marker.testing)
+
+@
+
+% ## \subsubsection{Extra-colonic cancers}
+
+% ## Information on extra-colonic cancer diagnosis is included in the \Robject{extra.colonic} object.  
+% ## Other cancer diagnoses that are considered to be HNPCC-associated cancers per the revised Bethesda Guidelines (see Umar 
+% ## et.al) can be included for all family members.  The user can input this information into a data frame 
+% ## with n rows and 1 column with column name ``ECC", which stores extra-colonic cancer status: enter 1 if affected,
+% ##  enter 0 if unaffected.
+
+% ## <<package>>=
+
+% ## ## The counselee's brother had a glioblastoma, which is HNPCC-associated
+% ## ECC <- rep(0, nrow(MMR.fam))
+% ## ECC[5] <- 1
+
+% ## extra.colonic <- data.frame(ECC)
+
+% ## MMRpro(family = MMR.fam, extra.colonic = extra.colonic)
+
+@
+
+\subsection{PancPRO}
+
+\subsubsection{Family History}
+
+Before running your pedigree through \Rfunction{pancpro}, be sure it is structured as a numeric data frame with history of pancreas 
+cancer: n rows (where n is the number of family members, including the counselee) and 6 
+columns with required column names described below.
+
+\noindent The family history includes the information on the counselee and his/her relatives. For each member, we need information on
+whether he or she has been diagnosed with colorectal cancer and either the age at diagnosis or, if cancer free, the current age 
+or the age at death.  We do the same for endometrial cancer, if the member is female.
+
+\noindent  The family cancer history must be entered in data frame form, with one row
+  for each family member and columns containing the following information: \\ \\
+
+{\small
+ \begin{tabular}{ll}
+   \textbf{Column} & \textbf{Content}  \\
+   ID & Member identifier \\
+   Gender & Gender (0=female, 1=male) \\
+   FatherID & Father's identifier number \\
+   MotherID & Mother's identifier number \\
+   AffectedPancreas & Pancreatic cancer status \\
+& (0=no cancer, 1=pancreatic cancer, NA=no information) \\
+  AgePancreas & Age of onset of pancreatic cancer if a pancreas cancer
+   case. \\
+   & Current age or age of death if not a pancreas cancer case.  \\
+   & NA if there is no age information. \\
+   Twins &Identifies siblings who are identical twins. \\
+   & Each twin pair is identified by a unique number.  For the rest enter a 0.  \\
+\end{tabular}
+}
+\\
+  \noindent If it is known that a family member is affected, but age of diagnosis is
+ unknown, either enter an estimate or evaluate the program at different
+ plausible ages. 
+
+
+\noindent The parameters used by the model, including penetrance, allele frequency, and sensitivity/specificity of testing, are set using 
+the function \Rfunction{pancparams}.  Any changes to the parameters can be made by calling this function.  
+
+<<package>>=
+
+# Change the output for future risk to be calculated
+# in age intervals of 1 year up to
+# age 65 instead of the default 5 years.
+# Leave all other parameters as set.
+myparams <- pancparams(age.by=1, age.to=65)
+
+# Run PancPRO with family history information for example family
+pancpro(family=panc.fam, params=myparams)
+
+@
+
+\subsubsection{Germline and Marker Testing}
+Because the PANC gene is a hypothetical gene, there are no germline or marker testing results to add to the calculation.
+
+
+
+\subsection{MelaPRO}
+
+\subsubsection{Family History}
+
+Before running your pedigree through \Rfunction{melapro}, be sure it is structured as a numeric data frame with history of melanomas: n rows (where n is the number of family members, including the counselee) and 6 
+columns with required column names described below.
+
+\noindent The family history includes the information on the counselee and his/her relatives. For each member, we need information on
+whether he or she has been diagnosed with colorectal cancer and either the age at diagnosis or, if cancer free, the current age 
+or the age at death.  We do the same for endometrial cancer, if the member is female.
+
+\noindent  The family cancer history must be entered in data frame form, with one row
+  for each family member and columns containing the following information: \\ \\
+
+{\small
+ \begin{tabular}{ll}
+   \textbf{Column} & \textbf{Content}  \\
+   ID & Member identifier \\
+   Gender & Gender (0=female, 1=male) \\
+   FatherID & Father's identifier number \\
+   MotherID & Mother's identifier number \\
+   AffectedSkin & Number of diagnosed melanomas \\
+& 0=no cancer,1=single melanoma, 2=multiple melanomas, NA=no information \\
+  AgeSkin & Age of onset of melanomas if a cancer
+   case. \\
+   & Current age or age of death if not a cancer case.  \\
+   & NA if there is no age information. \\
+   Twins &Identifies siblings who are identical twins. \\
+   & Each twin pair is identified by a unique number.  For the rest enter a 0.  \\
+\end{tabular}
+}
+\\
+  \noindent If
+ it is known that a family member is affected, but age of diagnosis is
+ unknown, either enter an estimate or evaluate the program at different
+ plausible ages. 
+
+
+\noindent The parameters used by the model, including penetrance, allele frequency, and sensitivity/specificity of testing, are set using 
+the function \Rfunction{melaparams}.  Any changes to the parameters can be made by calling this function.  
+
+<<package>>=
+
+# Change likelihood ratio for single melanomas
+# among noncarriers from default 0.702 to 0.80
+myparams <- melaparams(spm.lr.noncarrier=0.80)
+
+# Run PancPRO with family history information for example family
+melapro(family=mela.fam, params=myparams)
+
+@
+
+\subsubsection{Germline and Marker Testing}
+Information about germline testing results is included in the \Robject{germline.testing} object.  If the results 
+of germline testing are available, the user can input them into a data frame with n rows and 2 columns with
+    column names ``P16", and ``Test Order'' which
+    stores the mutation testing results for \emph{P16} (0=no test, 1=positive test,
+      2=negative test) and order in which family members were tested.  If the testing order is unknown, we suggest evaluating the model multiple times, allowing each tested family member to be indicated as the first person tested.
+
+<<package>>=
+
+# The counselee's sister was tested for
+# germline mutations in P16, and one was found.
+# Proband was also tested, but no mutation was found.
+P16 <- TestOrder <- rep(0, nrow(mela.fam))
+germline.testing = data.frame(P16, TestOrder)
+germline.testing[4,] <- c(1,1)
+germline.testing[1,] <- c(2,2)
+
+out <- melapro(family=mela.fam, germline.testing = germline.testing)
+
+@
+
+\section{Other Features}
+
+\subsection{Plotting a pedigree}
+
+The family history data frame can be displayed graphically in a traditional pedigree plot.  
+There are two options for plotting your pedigree.  If you want to plot your pedigree without running it through any of the models,
+the family history data frame \Robject{family} must be set to be part of the BayesMendel class and then plotted by simply
+using the generic function \Rfunction{plot}.  If the vital status of family members is known, it can included by adding a column
+labeled ``status" can be added to the family data frame.  Enter 0 if the individual is alive, or 1 if not alive.
+
+<<package>>=
+pdf("brcafamplot.pdf")
+brca.fam$Death <- rbinom(nrow(brca.fam), 1, 0.2)
+myfamily <- new("BayesMendel", family=brca.fam, counselee.id=1)
+plot.BayesMendel(myfamily, cex=0.2)
+dev.off()
+@
+
+\includegraphics[width=1.0\textwidth]{brcafamplot.pdf}
+
+\noindent The pedigree can also be run through any of the models and plotted with the carrier probabilities displayed on the 
+graph.
+
+<<package>>=
+
+pdf("mmrfamplot.pdf")
+MMR.fam$Death <- rbinom(nrow(MMR.fam), 1, 0.2)
+mmrpro.out <- MMRpro(family=MMR.fam, counselee.id=1)
+plot(mmrpro.out, cex=0.2)
+dev.off()
+@ 
+
+\includegraphics[width=1.0\textwidth]{mmrfamplot.pdf}
+
+\section{Interpreting the Risk Predictions}
+
+The $t$-year risk predictions in these models can be interepreted as the probability of developing the disease within $t$ years, conditional on surviving and being disease-free at the current age. Implicit in this interpretation is the assumption that the counselee has not died before developing the disease. To understand this more formally, we introduce some notation:
+
+Let $T_C$ be the theoretical (discrete, in years) age of the specific cancer of interest of the counselee. Thus, in the hypothetical scenario where the counselee does not die before this age, the counselee would develop the cancer of interest at this age. It is important to note that the counselee may or may not actually observe this outcome. Now let $T_D$ be the age of death for the counselee, and let $T = \min(T_C, T_D)$ be the age of the first outcome, either the cancer of interest or death. Let $J = C$ if $T = T_C$; i.e., if the counselee actually develops the cancer of interest, and let $J = D$ if $T = T_D$.
+
+Using this formulation, we can define the penetrance functions in BayesMendel (at a time $t$) as the probability of developing the cancer of interest at time $t$ and not having died up to time $t$; i.e., $P(T = t, J = C)$. Here we ignore the dependency on the gender and genotype in the penetrance functions.
+
+Putting this together, we can formally interpret the outputted $t$-year risk for the cancer of interest for a $t_0$-year-old counselee as
+\[P(T \leq t_0 + t, J = C | T > t_0).\]
+
+\section{Further Information}
+
+More information about our methods and software can be found at our website \\
+\textsf{http://http://bcb.dfci.harvard.edu/bayesmendel}.  We 
+can also be reached by email at \textsf{BayesMendel@jimmy.harvard.edu}.
+
+
+\end{document}

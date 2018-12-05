@@ -1,0 +1,49 @@
+##packages whose NAMESPACE you want to import.  These packages must be
+##in the Depends or Suggests field in the Description file
+import(kinship2, graphics)
+
+# BayesMendel.dll is the c code for peeling
+useDynLib(BayesMendel)
+
+###########################################################################
+##Classes and functions to export
+
+##Classes 
+exportClasses("BayesMendel")
+
+##functions
+export(
+       CensorAtIntervention,
+       FamilyHistoryContributions,
+       brcaparams,
+       brcapro,
+       calc.future.risk,
+       calLKLFS,
+       calRiskNoDeathLFS,
+       CheckFamStructure,
+       CombineDataLFS,
+	cum2haz,
+	cum2dens,
+	dens2hazcs,
+       findids,
+       ImputeAge,
+       lfsparams,
+       LFSpro,
+       lkNoneAffectLFS,
+       LyteSimple,
+       MakePenetPostIntervention,
+       MakeRelationship,
+       melapro,
+       melaparams,
+       MMRparams,
+       MMRpro,
+       pancparams,
+       pancpro,
+       peelingRC,
+       plot.BayesMendel,
+       PostIntervention,
+       premm,
+       ReadCaGeneFam,
+       TestContributions
+)
+
